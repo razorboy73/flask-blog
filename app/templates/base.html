@@ -1,0 +1,24 @@
+{% extends "bootstrap/base.html" %}
+{% block head %}
+    {{ super() }}
+
+        {% block styles %}
+        {{ super() }}
+        {% include "styles/_styles.html" %}
+        {% endblock %}
+        <title>{% block title %}stuff{% endblock %} - my application</title>
+
+
+{% endblock %}
+{% block navbar %}
+{% include "navbar/_navbar.html" %}
+{% endblock %}
+{% block content %}
+
+        {% block page_content %}{% endblock %}
+
+{% endblock %}
+
+{% block script %}
+
+{% endblock%}
