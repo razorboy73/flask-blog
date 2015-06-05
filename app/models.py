@@ -1,8 +1,9 @@
 __author__ = 'workhorse'
 
 from app import db
+from flask.ext.login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
-
+from . import login_manager
 
 class Role(db.Model):
     __tablename__= 'roles'
@@ -13,8 +14,9 @@ class Role(db.Model):
     def __repr__(self):
         return "<role %r>"% self.name
 
-class User(db.Model):
+class User(db.Model, UserMixin):
     id = db.Column(db.Integer, primary_key=True)
+    email = db.Column(db.String(64), unique=True, index=True)
     username = db.Column(db.String(64), unique=True, index=True)
     role_id = db.Column(db.Integer, db.ForeignKey('roles.id'))
     password_hash = db.Column(db.String(128))
@@ -32,3 +34,7 @@ class User(db.Model):
 
     def verify_password(self,password):
         return check_password_hash(self.password_hash, password)
+
+    @login_manager.user_loader
+    def load_user(user_id):
+        return User.query.get(int(user_id))
