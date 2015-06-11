@@ -101,7 +101,7 @@ def change_password():
 def password_reset_request():
     if not current_user.is_anonymous():
         return redirect(url_for('main.index'))
-    form = PasswordResetForm()
+    form = PasswordResetRequestForm()
     if form.validate_on_submit():
         user = User.query.filter_by(email=form.email.data).first()
         if user:
@@ -113,7 +113,7 @@ def password_reset_request():
 
 @auth.route("/reset/<token>", methods = ["GET","POST"])
 def password_reset(token):
-    if not current_user.is_anonymouse():
+    if not current_user.is_anonymous():
         return redirect(url_for('main.index'))
     form = PasswordResetForm()
     if form.validate_on_submit():
