@@ -1,10 +1,12 @@
 __author__ = 'workhorse'
 from datetime import datetime
+from ..decorators import admin_required, permission_required
+from flask.ext.login import login_required
 from flask import render_template, session, redirect, url_for, current_app
 from . import main
 from .forms import NameForm
 from .. import db
-from ..models import User
+from ..models import User, Permission
 from ..email import send_email
 
 
@@ -32,3 +34,16 @@ def index():
 @main.route('/user/<name>')
 def user(name):
     return render_template("user.html", name = name)
+
+@main.route("/admin")
+@login_required
+@admin_required
+def for_admins_only():
+    return "For admins only"
+
+@main.route("/moderator")
+@login_required
+@permission_required(Permission.MODERATE_COMMENTS)
+def for_moderators_only():
+    return "For comment moderators"
+
