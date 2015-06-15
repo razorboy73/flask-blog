@@ -18,7 +18,7 @@ def index():
         db.session.add(post)
         return redirect(url_for('.index'))
     posts = Post.query.order_by(Post.timestamp.desc()).all()
-    return render_template("index.html", form=form, posts=posts)
+    return render_template("index.html", form=form, posts=posts, current_time=datetime.now())
 
 
 @main.route("/admin")
