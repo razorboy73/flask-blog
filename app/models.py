@@ -37,7 +37,12 @@ class Role(db.Model):
             db.session.add(role)
         db.session.commit()
 
-
+class Post(db.Model):
+    __tablename__ = "posts"
+    id = db.Column(db.Integer, primary_key=True)
+    body = db.Column(db.Text)
+    timestamp = db.Column(db.DateTime, index=True, default=datetime.utcnow)
+    author_id = db.Column(db.Integer, db.ForeignKey('users.id'))
 
 class Permission:
     FOLLOW=0x01
@@ -58,6 +63,7 @@ class User(db.Model, UserMixin):
     about_me = db.Column(db.Text())
     member_since = db.Column(db.DateTime(), default=datetime.utcnow)
     last_seen = db.Column(db.DateTime(), default=datetime.utcnow)
+    posts = db.relationship("Post", backref="author", lazy="dynamic")
 
     def __repr__(self):
         return "<user %r>"%self.username
