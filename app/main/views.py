@@ -18,7 +18,7 @@ def index():
         db.session.add(post)
         return redirect(url_for('.index'))
     posts = Post.query.order_by(Post.timestamp.desc()).all()
-    return render_template("index.html", form=form, posts=posts)
+    return render_template("index.html", form=form, posts=posts, current_time = datetime.now())
 
 
 @main.route("/admin")
@@ -39,7 +39,8 @@ def user(username):
     user = User.query.filter_by(username=username).first()
     if user is None:
         abort(404)
-    return render_template('user.html', user=user)
+    posts = user.posts.order_by(Post.timestamp.desc()).all()
+    return render_template('user.html', user=user, posts=posts)
 
 @main.route("/edit-profile", methods=["GET","POST"])
 @login_required
