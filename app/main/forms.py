@@ -1,6 +1,7 @@
 __author__ = 'workhorse'
 from ..models import Role, User
 from flask.ext.wtf import Form
+from flask.ext.pagedown.fields import PageDownField
 from wtforms import StringField, SubmitField, SelectField, TextAreaField, BooleanField
 from wtforms.validators import DataRequired, Length, Email, Regexp, ValidationError
 
@@ -47,5 +48,5 @@ class EditProfileAdminForm(Form):
 
 
 class PostForm(Form):
-    body = TextAreaField("What is on your mind", validators=[DataRequired()])
+    body = PageDownField("What is on your mind", validators=[DataRequired()])
     submit = SubmitField("Submit")
