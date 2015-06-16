@@ -23,7 +23,7 @@ def index():
         error_out=False
     )
     posts = pagination.items
-    return render_template("index.html", form=form, posts=posts, current_time=datetime.now())
+    return render_template("index.html", form=form, posts=posts, pagination=pagination, current_time=datetime.now())
 
 
 
