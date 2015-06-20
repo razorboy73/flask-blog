@@ -2,6 +2,15 @@
 
 {% block title %} {{ name }}{% endblock %}
 {% block page_content %}
+  <div class="container">
+    {% for message in get_flashed_messages() %}
+    <div class="alert alert-warning">
+    <button type="button" class="close" data-dismiss="alert">&times;</button>
+    {{ message }}
+    </div>
+    {% endfor %}
+</div>
+    <div class="container">
         <div class="page-header">
         <img class ="img-rounded profile-thumbnail" src="{{ user.gravatar(size=256) }}">
         <div class="profile-header">
@@ -27,25 +36,25 @@
             Member since {{moment(user.member_since).format('L')}}.
             Last seen {{ moment(user.member_since).fromNow() }}
         </p>
-        {% if current_user.can(Permission.FOLLOW) and user != current_user %}
-            {% if not current_user.is_following(user) %}
-                <a href="{{ url_for('.follow', username=user.username) }}"
-                            class="btn btn-primary">Follow</a>
-        {% else %}
-                <a href="{{ url_for('.unfollow', username=user.username) }}"
-                            class="btn btn-default">Unfollow</a>
-        {% endif %}
-        {% endif %}
-<a href="{{ url_for('.followers', username=user.username) }}">
-Followers: <span class="badge">{{ user.followers.count() }}</span>
-</a>
-<a href="{{ url_for('.followed_by', username=user.username) }}">
-Following: <span class="badge">{{ user.followed.count() }}</span>
-</a>
-{% if current_user.is_authenticated() and user != current_user and
-user.is_following(current_user) %}
-| <span class="label label-default">Follows you</span>
-{% endif %}
+            {{ current_user.username }}
+            {{ user.username }}
+            {{ current_user.is_following(user) }}
+        <p>{{ user.posts.count() }} blog posts</p>
+        <p> {% if current_user.can(Permission.FOLLOW) and user != current_user %}
+                {% if not current_user.is_following(user) %}
+                <a href="{{ url_for('.follow', username=user.username) }}" class="btn btn-success">Follow</a>
+                {% else %}
+                <a href="{{ url_for('.unfollow', username=user.username) }}" class="btn btn-default">Unfollow</a>
+                {% endif %}
+             {% endif %}
+             <a href = "{{ url_for('.followers', username=user.username) }}">Followers: <span class="badge">{{ user.followers.count() }}</span> </a>
+             <a href = "{{ url_for('.followed_by', username=user.username) }}">Following: <span class="badge">{{ user.followed.count() }}</span> </a>
+                {% if current_user.is_authenticated() and user != current_user and user.is_following(current_user) %} | <span class="label label-default">Follows you</span>
+                    {% endif %}
+
+        </p>
+        <p>
+
 
 
 
@@ -60,8 +69,11 @@ user.is_following(current_user) %}
         Edit Profile [Admin]
         </a>
         {% endif %}
+        </p>
         </div>
+
         <h3>Posts by {{ user.username }}</h3>
+        </div>
         {% include 'posts/_posts.html' %}
         </div>
 {% endblock %}

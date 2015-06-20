@@ -1,6 +1,6 @@
 __author__ = 'workhorse'
 
-from app import db
+from app import db, login_manager
 import  bleach
 from flask.ext.login import UserMixin, AnonymousUserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -11,11 +11,14 @@ from . import login_manager
 from datetime import datetime
 import hashlib
 
-class Follow(db.Model):
-    __tablename__ = 'follows'
-    follower_id = db.Column(db.Integer, db.ForeignKey('users.id'), primary_key=True)
-    followed_id = db.Column(db.Integer, db.ForeignKey('users.id'), primary_key=True)
-    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+class Permission:
+    FOLLOW=0x01
+    COMMENT = 0x02
+    WRITE_ARTICLES = 0x04
+    MODERATE_COMMENTS = 0x08
+    ADMINISTER = 0x80
+
+
 
 class Role(db.Model):
     __tablename__= 'roles'
@@ -44,50 +47,15 @@ class Role(db.Model):
             db.session.add(role)
         db.session.commit()
 
-class Post(db.Model):
-    __tablename__ = "posts"
-    id = db.Column(db.Integer, primary_key=True)
-    body = db.Column(db.Text)
-    timestamp = db.Column(db.DateTime, index=True, default=datetime.utcnow)
-    author_id = db.Column(db.Integer, db.ForeignKey('users.id'))
-    body_html = db.Column(db.Text)
-
-    def __repr__(self):
-        return "<post id %d>"% self.id
-
-    @staticmethod
-    def on_changed_body(target,value, oldvalue, initiator):
-        allowed_tags = ['a', 'abbr', 'acronym', 'b', 'blockquote', 'code', 'em', 'i', 'li', 'ol', 'pre', 'strong', 'ul', 'h1', 'h2', 'h3', 'p']
-        target.body_html = bleach.linkify(bleach.clean(
-            markdown(value, output_format="html"),
-            tags=allowed_tags, strip=True
-        ))
 
 
-    @staticmethod
-    def generate_fake(count=100):
-        from random import seed, randint
-        import forgery_py
-
-        seed()
-        user_count = User.query.count()
-        for i in range(count):
-            u = User.query.offset(randint(0, user_count-1)).first()
-            p = Post(body=forgery_py.lorem_ipsum.sentences(randint(1,6)),
-                    timestamp = forgery_py.date.date(True),
-                    author = u)
-            db.session.add(p)
-            db.session.commit()
-
-db.event.listen(Post.body,'set',Post.on_changed_body )
+class Follow(db.Model):
+    __tablename__ = 'follows'
+    follower_id = db.Column(db.Integer, db.ForeignKey('users.id'), primary_key=True)
+    followed_id = db.Column(db.Integer, db.ForeignKey('users.id'), primary_key=True)
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
 
 
-class Permission:
-    FOLLOW=0x01
-    COMMENT = 0x02
-    WRITE_ARTICLES = 0x04
-    MODERATE_COMMENTS = 0x08
-    ADMINISTER = 0x80
 
 class User(db.Model, UserMixin):
 
@@ -115,28 +83,13 @@ class User(db.Model, UserMixin):
                                 foreign_keys = [Follow.followed_id],
                                 backref=db.backref("followed", lazy="joined"),
                                 lazy="dynamic",
-                                cascade="all,delete-orphan"
+                                cascade="all, delete-orphan"
                                 )
 
-    def follow(self,user):
-        if not self.is_following(user):
-            f = Follow(follower=self, followed=user)
-            db.session.add(f)
 
-    def unfollow(self,user):
-        f = self.followed.filter_by(followed_id=user.id).first()
-        if f:
-            db.session.delete(f)
-
-    def is_following(self, user):
-        return self.followed.filter_by(followed_id=user.id)is not None
-
-    def is_followed_by(self,user):
-        return self.followers.filter_by(
-            follower_id=user.id).first()
 
     def __repr__(self):
-        return "<user %r>"%self.username
+        return "%r"%self.username
 
     @property
     def password(self):
@@ -234,6 +187,24 @@ class User(db.Model, UserMixin):
         hash = hashlib.md5(self.email.encode('utf-8')).hexdigest()
         return '{url}/{hash}?s={size}&d={default}&r={rating}'.format(url=url, hash=hash, size=size, default=default, rating=rating)
 
+    def follow(self,user):
+        if not self.is_following(user):
+            f = Follow(follower=self,followed=user)
+            db.session.add(f)
+
+    def unfollow(self,user):
+        f = self.followed.filter_by(followed_id=user.id).first()
+        if f:
+            db.session.delete(f)
+
+    def is_following(self, user):
+        return self.followed.filter_by(followed_id=user.id).first() is not None
+
+    def is_followed_by(self,user):
+        return self.followers.filter_by(
+            follower_id=user.id).first() is not None
+
+
     @staticmethod
     def generate_fake(count=100):
         from sqlalchemy.exc import IntegrityError
@@ -257,6 +228,52 @@ class User(db.Model, UserMixin):
                 db.session.commit()
             except IntegrityError:
                 db.session.rollback()
+
+
+
+
+class Post(db.Model):
+    __tablename__ = "posts"
+    id = db.Column(db.Integer, primary_key=True)
+    body = db.Column(db.Text)
+    timestamp = db.Column(db.DateTime, index=True, default=datetime.utcnow)
+    author_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+    body_html = db.Column(db.Text)
+
+    def __repr__(self):
+        return "<post id %d>"% self.id
+
+    @staticmethod
+    def on_changed_body(target,value, oldvalue, initiator):
+        allowed_tags = ['a', 'abbr', 'acronym', 'b', 'blockquote', 'code', 'em', 'i', 'li', 'ol', 'pre', 'strong', 'ul', 'h1', 'h2', 'h3', 'p']
+        target.body_html = bleach.linkify(bleach.clean(
+            markdown(value, output_format="html"),
+            tags=allowed_tags, strip=True
+        ))
+
+
+    @staticmethod
+    def generate_fake(count=100):
+        from random import seed, randint
+        import forgery_py
+
+        seed()
+        user_count = User.query.count()
+        for i in range(count):
+            u = User.query.offset(randint(0, user_count-1)).first()
+            p = Post(body=forgery_py.lorem_ipsum.sentences(randint(1,6)),
+                    timestamp = forgery_py.date.date(True),
+                    author = u)
+            db.session.add(p)
+            db.session.commit()
+
+db.event.listen(Post.body,'set',Post.on_changed_body )
+
+
+
+
+
+
 
 
 
