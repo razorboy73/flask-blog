@@ -86,10 +86,20 @@ class User(db.Model, UserMixin):
                                 cascade="all, delete-orphan"
                                 )
 
+    def __init__(self, **kwargs):
+        super(User, self).__init__(**kwargs)
+        if self.role is None:
+            if self.email ==current_app.config["FLASKY_ADMIN"]:
+                self.role = Role.query.filter_by(permissions=0xff).first()
+            if self.role is None:
+                self.role = Role.query.filter_by(default=True).first()
+            self.follow(self)
 
 
     def __repr__(self):
         return "%r"%self.username
+
+
 
     @property
     def password(self):
@@ -159,13 +169,7 @@ class User(db.Model, UserMixin):
         db.session.add(self)
         return True
 
-    def __init__(self, **kwargs):
-        super(User, self).__init__(**kwargs)
-        if self.role is None:
-            if self.email ==current_app.config["FLASKY_ADMIN"]:
-                self.role = Role.query.filter_by(permissions=0xff).first()
-            if self.role is None:
-                self.role = Role.query.filter_by(default=True).first()
+
 
 
     def can(self,permissions):
@@ -201,8 +205,15 @@ class User(db.Model, UserMixin):
         return self.followed.filter_by(followed_id=user.id).first() is not None
 
     def is_followed_by(self,user):
-        return self.followers.filter_by(
-            follower_id=user.id).first() is not None
+        return self.followers.filter_by(follower_id=user.id).first() is not None
+
+
+    @property
+    def followed_posts(self):
+        return Post.query.join(Follow, Follow.followed_id ==Post.author_id)\
+        .filter(Follow.follower_id==self.id)
+
+
 
 
     @staticmethod
