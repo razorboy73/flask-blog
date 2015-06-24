@@ -214,6 +214,12 @@ class User(db.Model, UserMixin):
         .filter(Follow.follower_id==self.id)
 
 
+    @staticmethod
+    def add_self_follows():
+        for user in User.query.all():
+            if not user.is_following(user):
+                db.session.add(user)
+                db.session.commit()
 
 
     @staticmethod
